@@ -101,7 +101,17 @@ void MainComponent::toggleStereoMix()
 void MainComponent::addVst()
 {
     juce::FileChooser fc("Chọn VST3", {}, "*.vst3");
-    if (!fc.browseForFileToOpen()) return;
+    auto flags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
+
+chooser = std::make_unique<juce::FileChooser> ("Select File", juce::File{}, "*.wav;*.mp3");
+chooser->launchAsync (flags, [this] (const juce::FileChooser& fc)
+{
+    auto file = fc.getResult();
+    if (file.exists())
+    {
+        // Code xử lý file của bạn ở đây
+    }
+});
     juce::String error;
     if (!engine.vstRack().addVst3(fc.getResult(),error))
         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,"VST3",error);
