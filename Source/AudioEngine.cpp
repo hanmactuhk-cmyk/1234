@@ -61,7 +61,8 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     // into the master only at the final stage; the music bus remains a separate bus.
     // This guarantees Stereo Mix cannot accidentally route into the mic chain.
     for (int ch = 0; ch < master.getNumChannels(); ++ch)
-        master.copyFrom(ch, 0, mic, ch, 0, numSamples, masterVolume);
+        master.copyFrom(ch, 0, mic, ch, 0, numSamples);
+master.applyGain(ch, 0, numSamples, masterVolume);
 
     masterChain_.process(master);
 
