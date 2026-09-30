@@ -1,0 +1,136 @@
+name: Build HNStudio Musik AI
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+
+jobs:
+  build-windows:
+
+    name: Build HNStudio Musik AI Windows x64
+    runs-on: windows-latest
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@v3.30.2
+
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+
+      - name: Check tools
+        shell: cmd
+        run: |
+          cmake --version
+          ninja --version
+          cl
+
+
+      - name: Configure CMake
+        shell: cmd
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+
+      - name: Build HNStudio Musik AI
+        shell: cmd
+        run: |
+          cmake --build build --parallel
+
+
+      - name: Find EXE
+        shell: powershell
+        run: |
+
+          Write-Host "Searching EXE..."
+
+          $exe = Get-ChildItem `
+          -Path build `
+          -Filter "*.exe" `
+          -Recurse |
+          Select-Object -First 1
+
+
+          if (-not $exe)
+          {
+            Write-Host "No EXE found"
+            Get-ChildItem build -Recurse
+            exit 1
+          }
+
+
+          Write-Host "Found:"
+          Write-Host $exe.FullName
+
+
+          New-Item `
+          -ItemType Directory `
+          -Force `
+          -Path package | Out-Null
+
+
+          Copy-Item `
+          $exe.FullName `
+          "package\HNStudio-Musik-AI.exe"
+
+
+
+      - name: Copy DLL
+        shell: powershell
+        run: |
+
+          $dlls = Get-ChildItem `
+          -Path build `
+          -Filter "*.dll" `
+          -Recurse `
+          -ErrorAction SilentlyContinue
+
+
+          foreach($dll in $dlls)
+          {
+             Copy-Item `
+             $dll.FullName `
+             "package\" `
+             -Force
+          }
+
+
+
+      - name: Create ZIP
+        shell: powershell
+        run: |
+
+          Compress-Archive `
+          -Path package\* `
+          -DestinationPath HNStudio-Musik-AI-Windows-x64.zip `
+          -Force
+
+
+
+      - name: Upload Build
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: HNStudio-Musik-AI-Windows-x64
+
+          path: |
+            package/*
+            HNStudio-Musik-AI-Windows-x64.zip
+
+          if-no-files-found: error
